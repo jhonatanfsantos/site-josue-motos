@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oficina Josué Motos - Gestão & Garantias</title>
+    <!-- Fonte Oficial -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8B0000;
+            --primary-hover: #A00000;
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --card-border: #2d2d2d;
+            --text-main: #f1f1f1;
+            --text-muted: #a0a0a0;
+            --green: #2e7d32;
+            --green-light: rgba(46, 125, 50, 0.25);
+            --yellow: #f57f17;
+            --danger: #d32f2f;
+            --input-bg: #2a2a2a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TELA DE LOGIN */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .login-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(139, 0, 0, 0.3);
+        }
+
+        .login-card h1 {
+            color: white;
+            font-size: 22px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-success { background-color: var(--green); }
+        .btn-success:hover { background-color: #388e3c; }
+
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: #b71c1c; }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+            width: auto;
+        }
+
+        /* CABEÇALHO DA OFICINA */
+        header {
+            background-color: var(--primary);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-brand h1 {
+            font-size: 20px;
+            color: white;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sync-badge {
+            background: rgba(255,255,255,0.15);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #4caf50;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #4caf50;
+        }
+
+        /* NAVEGAÇÃO POR ABAS */
+        .tabs-nav {
+            display: flex;
+            background-color: #181818;
+            border-bottom: 1px solid var(--card-border);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 16px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn.active {
+            color: white;
+            border-bottom-color: var(--primary);
+            background-color: rgba(139, 0, 0, 0.15);
+        }
+
+        /* CONTAINER PRINCIPAL */
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* GRIDS DE FORMULÁRIO E MÉTRICAS */
+        .grid-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .grid-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background-color: #252525;
+            padding: 14px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .metric-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+        }
+
+        /* BUSCA EM TEMPO REAL */
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            padding-left: 42px;
+            font-size: 16px;
+            background-color: #252525;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+
+        /* TABELA DE PAINÉIS */
+        .table-responsive { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #252525;
+            color: var(--text-muted);
+            padding: 12px;
+            font-weight: 600;
+            border-bottom: 2px solid var(--card-border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--card-border);
+            vertical-align: middle;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge-warning {
+            background-color: rgba(245, 127, 23, 0.2);
+            color: #fbc02d;
+            border: 1px solid rgba(245, 127, 23, 0.4);
+        }
+
+        .badge-success {
+            background-color: rgba(46, 125, 50, 0.25);
+            color: #81c784;
+            border: 1px solid rgba(46, 125, 50, 0.5);
+        }
+
+        /* CARD DE GARANTIA DE MOTOR */
+        .warranty-item {
+            background-color: #242424;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .warranty-item.completed {
+            border: 2px solid var(--green);
+            background-color: #1b281c;
+        }
+
+        .warranty-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .warranty-client {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .warranty-moto {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .placa-tag {
+            background-color: #333;
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border: 1px solid #555;
+        }
+
+        /* BLOCOS DE TROCAS DE ÓLEO */
+        .oil-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .oil-step-box {
+            background-color: #1a1a1a;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .oil-step-box.done {
+            border-color: var(--green);
+            background-color: rgba(46, 125, 50, 0.2);
+        }
+
+        .step-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .step-info {
+            font-size: 13px;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .grid-form { grid-template-columns: 1fr; }
+            header h1 { font-size: 16px; }
+            .warranty-header { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <h1>Oficina Josué Motos</h1>
+            <p>Acesso Exclusivo da Equipe</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Usuário</label>
+                    <input type="text" id="login-user" class="form-control" placeholder="Digite seu usuário" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="login-pass" class="form-control" placeholder="Digite sua senha" required>
+                </div>
+                <button type="submit" class="btn">🔑 Entrar no Sistema</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTAINER DA APLICAÇÃO -->
+    <div id="app-container" style="display: none;">
+        
+        <!-- CABEÇALHO -->
+        <header>
+            <div class="header-brand">
+                <h1>🏍️ Oficina Josué Motos</h1>
+            </div>
+            <div class="header-actions">
+                <div class="sync-badge">
+                    <div class="pulse-dot"></div>
+                    <span id="sync-text">Sincronizado na Nuvem</span>
+                </div>
+                <button onclick="logout()" class="btn btn-danger btn-sm">Sair</button>
+            </div>
+        </header>
+
+        <!-- ABAS -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('paineis')">
+                📟 Controle de Painéis
+            </button>
+            <button class="tab-btn" onclick="switchTab('garantias')">
+                ⚙️ Garantia de Motores (3 Trocas de Óleo)
+            </button>
+        </div>
+
+        <div class="container">
+
+            <!-- TAB 1: PAINÉIS -->
+            <div id="tab-paineis" class="tab-content active">
+                <div class="card">
+                    <div class="card-title">📥 Registrar Novo Painel</div>
+                    <form id="form-painel" onsubmit="registrarPainel(event)">
+                        <div class="grid-form">
+                            <div class="form-group">
+                                <label>Modelo da Moto *</label>
+                                <input type="text" id="p-modelo" class="form-control" placeholder="Ex: Titan 160 / XJ6" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nome do Cliente</label>
+                                <input type="text" id="p-cliente" class="form-control" placeholder="Ex: João Silva">
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone / WhatsApp</label>
+                                <input type="text" id="p-telefone" class="form-control" placeholder="(98) 98888-8888">
+                            </div>
+                            <div class="form-group">
+                                <label>Valor (R$) *</label>
+                                <input type="number" step="0.01" id="p-valor" class="form-control" placeholder="0.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Forma de Pagamento *</label>
+                                <select id="p-pagamento" class="form-control">
+                                    <option value="Pix">Pix</option>
+                                    <option value="Dinheiro">Dinheiro</option>
+                                    <option value="Débito">Débito</option>
+                                    <option value="Crédito">Crédito</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" style="margin-top: 12px;">+ Registrar Entrada de Painel</button>
+                    </form>
+                </div>
+
+                <!-- RESUMO FINANCEIRO -->
+                <div class="grid-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Faturamento Total</div>
+                        <div class="metric-value" id="m-total">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Pix</div>
+                        <div class="metric-value" id="m-pix">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Dinheiro</div>
+                        <div class="metric-value" id="m-dinheiro">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Débito</div>
+                        <div class="metric-value" id="m-debito">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Crédito</div>
+                        <div class="metric-value" id="m-credito">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📋 Painéis Registrados</div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Modelo</th>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Pagamento</th>
+                                    <th>Status</th>
+                                    <th>Entrada / Saída</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-paineis"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: GARANTIA DE MOTORES -->
+            <div id="tab-garantias" class="tab-content">
+                <div class="card">
+                    <div class="card-title">⚙️ Cadastrar Nova Garantia de Motor</div>
+                    <form id="form-garantia" onsubmit="registrarGarantia(event)">
+                        <div class="grid-form">
+                            <div class="form-group">
+                                <label>Nome do Cliente *</label>
+                                <input type="text" id="g-cliente" class="form-control" placeholder="Ex: Carlos Eduardo" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone / WhatsApp</label>
+                                <input type="text" id="g-telefone" class="form-control" placeholder="Ex: (98) 99191-0000">
+                            </div>
+                            <div class="form-group">
+                                <label>Modelo da Moto *</label>
+                                <input type="text" id="g-moto" class="form-control" placeholder="Ex: Bros 160 / Fan 150" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Placa da Moto *</label>
+                                <input type="text" id="g-placa" class="form-control" placeholder="Ex: PSL-4020" required>
+                            </div>
+                            <div class="form-group">
+                                <label>KM Atual (Na Entrega do Motor) *</label>
+                                <input type="number" id="g-km" class="form-control" placeholder="Ex: 45000" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" style="margin-top: 12px;">+ Iniciar Garantia de Motor</button>
+                    </form>
+                </div>
+
+                <!-- CAMPO DE BUSCA RÁPIDA POR NOME -->
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-garantia" class="form-control" placeholder="Buscar por Nome do Cliente, Placa ou Modelo da Moto..." oninput="renderGarantias()">
+                </div>
+
+                <!-- LISTA DE GARANTIAS -->
+                <div id="lista-garantias"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LOGICA JAVASCRIPT -->
+    <script>
+        let state = {
+            paineis: [],
+            garantias: []
+        };
+
+        // LOGIN
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value.trim().toLowerCase();
+            const p = document.getElementById('login-pass').value.trim();
+
+            if (u === 'josue' && p === 'motos123') {
+                sessionStorage.setItem('auth', 'true');
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                loadData();
+            } else {
+                alert('Usuário ou senha incorretos!');
+            }
+        });
+
+        function checkAuth() {
+            if (sessionStorage.getItem('auth') === 'true') {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                loadData();
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('auth');
+            location.reload();
+        }
+
+        // ALTERNÂNCIA DE ABAS
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tabName === 'paineis') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-paineis').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-garantias').classList.add('active');
+            }
+        }
+
+        function loadData() {
+            const localPaineis = localStorage.getItem('oficina_paineis');
+            const localGarantias = localStorage.getItem('oficina_garantias');
+
+            if (localPaineis) state.paineis = JSON.parse(localPaineis);
+            if (localGarantias) state.garantias = JSON.parse(localGarantias);
+
+            renderPaineis();
+            renderGarantias();
+        }
+
+        function saveData() {
+            localStorage.setItem('oficina_paineis', JSON.stringify(state.paineis));
+            localStorage.setItem('oficina_garantias', JSON.stringify(state.garantias));
+            renderPaineis();
+            renderGarantias();
+        }
+
+        function getNowFormatted() {
+            const now = new Date();
+            return now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+        }
+
+        // MÓDULO PAINÉIS
+        function registrarPainel(e) {
+            e.preventDefault();
+            const modelo = document.getElementById('p-modelo').value.trim();
+            const cliente = document.getElementById('p-cliente').value.trim() || '-';
+            const telefone = document.getElementById('p-telefone').value.trim() || '-';
+            const valor = parseFloat(document.getElementById('p-valor').value);
+            const pagamento = document.getElementById('p-pagamento').value;
+
+            const novoPainel = {
+                id: Date.now(),
+                modelo, cliente, telefone, valor, pagamento,
+                entrada: getNowFormatted(),
+                saida: '-',
+                status: 'Em Andamento'
+            };
+
+            state.paineis.unshift(novoPainel);
+            saveData();
+            document.getElementById('form-painel').reset();
+        }
+
+        function finalizarPainel(id) {
+            const item = state.paineis.find(p => p.id === id);
+            if (item) {
+                item.status = 'Finalizado';
+                item.saida = getNowFormatted();
+                saveData();
+            }
+        }
+
+        function deletarPainel(id) {
+            if (confirm('Deseja apagar este painel?')) {
+                state.paineis = state.paineis.filter(p => p.id !== id);
+                saveData();
+            }
+        }
+
+        function renderPaineis() {
+            const tbody = document.getElementById('lista-paineis');
+            tbody.innerHTML = '';
+
+            let total = 0, pix = 0, din = 0, deb = 0, cred = 0;
+
+            state.paineis.forEach(item => {
+                const val = parseFloat(item.valor) || 0;
+                total += val;
+                if (item.pagamento === 'Pix') pix += val;
+                if (item.pagamento === 'Dinheiro') din += val;
+                if (item.pagamento === 'Débito') deb += val;
+                if (item.pagamento === 'Crédito') cred += val;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${item.modelo}</strong></td>
+                    <td>${item.cliente}<br><small style="color:#888">${item.telefone}</small></td>
+                    <td>R$ ${val.toFixed(2)}</td>
+                    <td>${item.pagamento}</td>
+                    <td>
+                        <span class="badge ${item.status === 'Finalizado' ? 'badge-success' : 'badge-warning'}">
+                            ${item.status === 'Finalizado' ? '🟢 Finalizado' : '🟡 Em Andamento'}
+                        </span>
+                    </td>
+                    <td><small>Entrada: ${item.entrada}<br>Saída: ${item.saida}</small></td>
+                    <td>
+                        ${item.status === 'Em Andamento' ? `<button onclick="finalizarPainel(${item.id})" class="btn btn-success btn-sm">Finalizar</button>` : ''}
+                        <button onclick="deletarPainel(${item.id})" class="btn btn-danger btn-sm" style="margin-left:4px;">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('m-total').innerText = `R$ ${total.toFixed(2)}`;
+            document.getElementById('m-pix').innerText = `R$ ${pix.toFixed(2)}`;
+            document.getElementById('m-dinheiro').innerText = `R$ ${din.toFixed(2)}`;
+            document.getElementById('m-debito').innerText = `R$ ${deb.toFixed(2)}`;
+            document.getElementById('m-credito').innerText = `R$ ${cred.toFixed(2)}`;
+        }
+
+        // MÓDULO GARANTIA DE MOTORES (3 TROCAS)
+        function registrarGarantia(e) {
+            e.preventDefault();
+            const cliente = document.getElementById('g-cliente').value.trim();
+            const telefone = document.getElementById('g-telefone').value.trim() || '-';
+            const moto = document.getElementById('g-moto').value.trim();
+            const placa = document.getElementById('g-placa').value.trim().toUpperCase();
+            const km = document.getElementById('g-km').value.trim();
+
+            const novaGarantia = {
+                id: Date.now(),
+                cliente, telefone, moto, placa, kmInicial: km,
+                dataInicial: getNowFormatted(),
+                troca1: null,
+                troca2: null,
+                troca3: null,
+                status: 'Em Andamento'
+            };
+
+            state.garantias.unshift(novaGarantia);
+            saveData();
+            document.getElementById('form-garantia').reset();
+        }
+
+        function registrarTrocaOleo(id, numTroca) {
+            const item = state.garantias.find(g => g.id === id);
+            if (!item) return;
+
+            const kmAtual = prompt(`Digite a KM atual do veículo para a ${numTroca}ª Troca de Óleo:`);
+            if (!kmAtual) return;
+
+            const registro = {
+                data: getNowFormatted(),
+                km: kmAtual
+            };
+
+            if (numTroca === 1) item.troca1 = registro;
+            if (numTroca === 2) item.troca2 = registro;
+            if (numTroca === 3) {
+                item.troca3 = registro;
+                item.status = 'Concluído'; // GARANTIA TOTALMENTE CUMPRIDA!
+            }
+
+            saveData();
+        }
+
+        function deletarGarantia(id) {
+            if (confirm('Deseja excluir esta garantia?')) {
+                state.garantias = state.garantias.filter(g => g.id !== id);
+                saveData();
+            }
+        }
+
+        function renderGarantias() {
+            const container = document.getElementById('lista-garantias');
+            const search = document.getElementById('search-garantia').value.trim().toLowerCase();
+            container.innerHTML = '';
+
+            const filtrados = state.garantias.filter(g => 
+                g.cliente.toLowerCase().includes(search) ||
+                g.placa.toLowerCase().includes(search) ||
+                g.moto.toLowerCase().includes(search)
+            );
+
+            if (filtrados.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">Nenhuma garantia encontrada.</p>';
+                return;
+            }
+
+            filtrados.forEach(item => {
+                const isConcluido = item.status === 'Concluído';
+                const card = document.createElement('div');
+                card.className = `warranty-item ${isConcluido ? 'completed' : ''}`;
+
+                card.innerHTML = `
+                    <div class="warranty-header">
+                        <div>
+                            <div class="warranty-client">👤 ${item.cliente}</div>
+                            <div class="warranty-moto">🏍️ ${item.moto} | Tel: ${item.telefone}</div>
+                            <div style="font-size:12px; color:#aaa; margin-top:4px;">Entrega Motor: ${item.dataInicial} | KM Inicial: <strong>${item.kmInicial} km</strong></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="placa-tag">${item.placa}</span>
+                            <div style="margin-top:6px;">
+                                <span class="badge ${isConcluido ? 'badge-success' : 'badge-warning'}">
+                                    ${isConcluido ? '🟢 GARANTIA CONCLUÍDA (3/3 TROCAS)' : '🟡 GARANTIA EM ANDAMENTO'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3 TROCAS DE ÓLEO -->
+                    <div class="oil-steps">
+                        <div class="oil-step-box ${item.troca1 ? 'done' : ''}">
+                            <div class="step-title">1ª Troca de Óleo</div>
+                            ${item.troca1 
+                                ? `<div class="step-info">✅ Realizada:<br><strong>${item.troca1.data}</strong><br>KM: ${item.troca1.km}</div>`
+                                : `<button onclick="registrarTrocaOleo(${item.id}, 1)" class="btn btn-sm" style="margin-top:6px;">Registrar 1ª Troca</button>`
+                            }
+                        </div>
+
+                        <div class="oil-step-box ${item.troca2 ? 'done' : ''}">
+                            <div class="step-title">2ª Troca de Óleo</div>
+                            ${item.troca2 
+                                ? `<div class="step-info">✅ Realizada:<br><strong>${item.troca2.data}</strong><br>KM: ${item.troca2.km}</div>`
+                                : (item.troca1 
+                                    ? `<button onclick="registrarTrocaOleo(${item.id}, 2)" class="btn btn-sm" style="margin-top:6px;">Registrar 2ª Troca</button>`
+                                    : `<span style="font-size:11px; color:#666;">Aguardando 1ª Troca</span>`
+                                  )
+                            }
+                        </div>
+
+                        <div class="oil-step-box ${item.troca3 ? 'done' : ''}">
+                            <div class="step-title">3ª Troca de Óleo</div>
+                            ${item.troca3 
+                                ? `<div class="step-info">✅ Realizada:<br><strong>${item.troca3.data}</strong><br>KM: ${item.troca3.km}</div>`
+                                : (item.troca2 
+                                    ? `<button onclick="registrarTrocaOleo(${item.id}, 3)" class="btn btn-success btn-sm" style="margin-top:6px;">Finalizar 3ª Troca</button>`
+                                    : `<span style="font-size:11px; color:#666;">Aguardando 2ª Troca</span>`
+                                  )
+                            }
+                        </div>
+                    </div>
+
+                    <div style="margin-top:12px; text-align:right;">
+                        <button onclick="deletarGarantia(${item.id})" class="btn btn-danger btn-sm">Excluir Registro</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
