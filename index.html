@@ -6,6 +6,9 @@
     <title>Oficina Josué Motos - Gestão & Garantias</title>
     <!-- Fonte Oficial -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary: #8B0000;
@@ -428,6 +431,34 @@
             margin-bottom: 8px;
         }
 
+        /* FILTROS / RELATÓRIO */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .filter-bar .form-group { margin-bottom: 0; min-width: 160px; }
+
+        input[type="date"].form-control,
+        input[type="month"].form-control { color-scheme: dark; }
+
+        .filter-summary {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .pay-select {
+            padding: 6px 8px;
+            font-size: 13px;
+            min-width: 120px;
+        }
+
+        .pay-pending { color: var(--yellow); font-size: 11px; display: block; margin-top: 4px; }
+        .pay-confirmed { color: #66bb6a; font-size: 11px; display: block; margin-top: 4px; }
+
         @media (max-width: 768px) {
             .container { padding: 12px; }
             .grid-form { grid-template-columns: 1fr; }
@@ -509,8 +540,9 @@
                                 <input type="number" step="0.01" id="p-valor" class="form-control" placeholder="0.00" required>
                             </div>
                             <div class="form-group">
-                                <label>Forma de Pagamento *</label>
+                                <label>Forma de Pagamento (confirmada ao finalizar)</label>
                                 <select id="p-pagamento" class="form-control">
+                                    <option value="A definir">A definir</option>
                                     <option value="Pix">Pix</option>
                                     <option value="Dinheiro">Dinheiro</option>
                                     <option value="Débito">Débito</option>
@@ -522,11 +554,54 @@
                     </form>
                 </div>
 
+                <!-- FILTRO POR PERÍODO + RELATÓRIO PDF -->
+                <div class="card">
+                    <div class="card-title">📅 Filtrar por Período</div>
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label>Período</label>
+                            <select id="f-tipo" class="form-control" onchange="atualizarCamposFiltro()">
+                                <option value="todos">Todos</option>
+                                <option value="dia">Dia</option>
+                                <option value="mes">Mês</option>
+                                <option value="ano">Ano</option>
+                                <option value="intervalo">Intervalo de datas</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="f-grupo-dia" style="display:none;">
+                            <label>Data</label>
+                            <input type="date" id="f-dia" class="form-control" onchange="renderPaineis()">
+                        </div>
+                        <div class="form-group" id="f-grupo-mes" style="display:none;">
+                            <label>Mês</label>
+                            <input type="month" id="f-mes" class="form-control" onchange="renderPaineis()">
+                        </div>
+                        <div class="form-group" id="f-grupo-ano" style="display:none;">
+                            <label>Ano</label>
+                            <select id="f-ano" class="form-control" onchange="renderPaineis()"></select>
+                        </div>
+                        <div class="form-group" id="f-grupo-de" style="display:none;">
+                            <label>De</label>
+                            <input type="date" id="f-de" class="form-control" onchange="renderPaineis()">
+                        </div>
+                        <div class="form-group" id="f-grupo-ate" style="display:none;">
+                            <label>Até</label>
+                            <input type="date" id="f-ate" class="form-control" onchange="renderPaineis()">
+                        </div>
+                        <button type="button" class="btn" onclick="baixarRelatorioPDF()">📄 Baixar Relatório PDF</button>
+                    </div>
+                    <div class="filter-summary" id="f-resumo"></div>
+                </div>
+
                 <!-- RESUMO FINANCEIRO -->
                 <div class="grid-metrics">
                     <div class="metric-card">
-                        <div class="metric-title">Faturamento Total</div>
+                        <div class="metric-title">Faturamento (Finalizados)</div>
                         <div class="metric-value" id="m-total">R$ 0,00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">A Receber (Em Andamento)</div>
+                        <div class="metric-value" id="m-receber">R$ 0,00</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-title">Pix</div>
@@ -695,6 +770,7 @@
 
             const novoPainel = {
                 id: Date.now(),
+                entradaTs: Date.now(),
                 modelo, cliente, telefone, valor, pagamento,
                 entrada: getNowFormatted(),
                 saida: '-',
@@ -706,13 +782,191 @@
             document.getElementById('form-painel').reset();
         }
 
-        function finalizarPainel(id) {
+        const FORMAS_PAGAMENTO = ['Pix', 'Dinheiro', 'Débito', 'Crédito'];
+
+        function editarPagamento(id, valor) {
             const item = state.paineis.find(p => p.id === id);
-            if (item) {
-                item.status = 'Finalizado';
-                item.saida = getNowFormatted();
+            if (item && item.status !== 'Finalizado') {
+                item.pagamento = valor;
                 saveData();
             }
+        }
+
+        function finalizarPainel(id) {
+            const item = state.paineis.find(p => p.id === id);
+            if (!item) return;
+
+            if (!FORMAS_PAGAMENTO.includes(item.pagamento)) {
+                alert('Selecione a forma de pagamento antes de finalizar o serviço.');
+                return;
+            }
+
+            if (!confirm(`Finalizar o serviço e confirmar pagamento via ${item.pagamento} (R$ ${(parseFloat(item.valor) || 0).toFixed(2)})?`)) return;
+
+            item.status = 'Finalizado';
+            item.saida = getNowFormatted();
+            saveData();
+        }
+
+        // FILTRO POR PERÍODO
+        function getEntradaDate(item) {
+            // Registros antigos não têm entradaTs; o id é o timestamp de criação
+            return new Date(item.entradaTs || item.id);
+        }
+
+        function toISODate(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
+        function formatISODateBR(iso) {
+            const [y, m, d] = iso.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function atualizarCamposFiltro() {
+            const tipo = document.getElementById('f-tipo').value;
+            const hoje = new Date();
+            const mostrar = (grupo, visivel) => {
+                document.getElementById(grupo).style.display = visivel ? '' : 'none';
+            };
+
+            mostrar('f-grupo-dia', tipo === 'dia');
+            mostrar('f-grupo-mes', tipo === 'mes');
+            mostrar('f-grupo-ano', tipo === 'ano');
+            mostrar('f-grupo-de', tipo === 'intervalo');
+            mostrar('f-grupo-ate', tipo === 'intervalo');
+
+            if (tipo === 'dia' && !document.getElementById('f-dia').value) {
+                document.getElementById('f-dia').value = toISODate(hoje);
+            }
+            if (tipo === 'mes' && !document.getElementById('f-mes').value) {
+                document.getElementById('f-mes').value = toISODate(hoje).slice(0, 7);
+            }
+            if (tipo === 'intervalo') {
+                if (!document.getElementById('f-de').value) document.getElementById('f-de').value = toISODate(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+                if (!document.getElementById('f-ate').value) document.getElementById('f-ate').value = toISODate(hoje);
+            }
+
+            renderPaineis();
+        }
+
+        function preencherAnosFiltro() {
+            const select = document.getElementById('f-ano');
+            const atual = select.value;
+            const anos = new Set([new Date().getFullYear()]);
+            state.paineis.forEach(p => anos.add(getEntradaDate(p).getFullYear()));
+
+            select.innerHTML = [...anos].sort((a, b) => b - a)
+                .map(a => `<option value="${a}">${a}</option>`).join('');
+            if (atual && anos.has(parseInt(atual))) select.value = atual;
+        }
+
+        function getFiltroPeriodo() {
+            const tipo = document.getElementById('f-tipo').value;
+
+            if (tipo === 'dia') {
+                const dia = document.getElementById('f-dia').value;
+                if (dia) return { label: `Dia ${formatISODateBR(dia)}`, test: d => toISODate(d) === dia };
+            }
+            if (tipo === 'mes') {
+                const mes = document.getElementById('f-mes').value;
+                if (mes) {
+                    const [y, m] = mes.split('-');
+                    return { label: `Mês ${m}/${y}`, test: d => toISODate(d).slice(0, 7) === mes };
+                }
+            }
+            if (tipo === 'ano') {
+                const ano = parseInt(document.getElementById('f-ano').value);
+                if (ano) return { label: `Ano ${ano}`, test: d => d.getFullYear() === ano };
+            }
+            if (tipo === 'intervalo') {
+                const de = document.getElementById('f-de').value;
+                const ate = document.getElementById('f-ate').value;
+                if (de || ate) {
+                    const label = `Período ${de ? formatISODateBR(de) : 'início'} a ${ate ? formatISODateBR(ate) : 'hoje'}`;
+                    return { label, test: d => {
+                        const iso = toISODate(d);
+                        return (!de || iso >= de) && (!ate || iso <= ate);
+                    }};
+                }
+            }
+
+            return { label: 'Todos os períodos', test: () => true };
+        }
+
+        function getPaineisFiltrados() {
+            const filtro = getFiltroPeriodo();
+            return {
+                label: filtro.label,
+                itens: state.paineis.filter(p => filtro.test(getEntradaDate(p)))
+            };
+        }
+
+        function calcularResumo(itens) {
+            const r = { total: 0, receber: 0, Pix: 0, Dinheiro: 0, 'Débito': 0, 'Crédito': 0, finalizados: 0, andamento: 0 };
+            itens.forEach(item => {
+                const val = parseFloat(item.valor) || 0;
+                if (item.status === 'Finalizado') {
+                    r.finalizados++;
+                    r.total += val;
+                    if (r[item.pagamento] !== undefined) r[item.pagamento] += val;
+                } else {
+                    r.andamento++;
+                    r.receber += val;
+                }
+            });
+            return r;
+        }
+
+        // RELATÓRIO PDF
+        function baixarRelatorioPDF() {
+            if (!window.jspdf) {
+                alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão com a internet.');
+                return;
+            }
+
+            const { label, itens } = getPaineisFiltrados();
+            const r = calcularResumo(itens);
+            const brl = v => `R$ ${v.toFixed(2)}`;
+
+            const doc = new window.jspdf.jsPDF({ orientation: 'landscape' });
+
+            doc.setFontSize(16);
+            doc.setTextColor(139, 0, 0);
+            doc.text('Oficina Josué Motos - Relatório de Painéis', 14, 16);
+            doc.setFontSize(10);
+            doc.setTextColor(60);
+            doc.text(`${label}  |  Gerado em ${getNowFormatted()}`, 14, 23);
+
+            doc.autoTable({
+                startY: 28,
+                head: [['Faturamento (Finalizados)', 'A Receber', 'Pix', 'Dinheiro', 'Débito', 'Crédito', 'Serviços']],
+                body: [[brl(r.total), brl(r.receber), brl(r.Pix), brl(r.Dinheiro), brl(r['Débito']), brl(r['Crédito']),
+                    `${itens.length} (${r.finalizados} finalizados / ${r.andamento} em andamento)`]],
+                theme: 'grid',
+                headStyles: { fillColor: [139, 0, 0] },
+                styles: { fontSize: 9 }
+            });
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 8,
+                head: [['Modelo', 'Cliente', 'Telefone', 'Valor', 'Pagamento', 'Status', 'Entrada', 'Saída']],
+                body: itens.length
+                    ? itens.map(item => [
+                        item.modelo, item.cliente, item.telefone,
+                        brl(parseFloat(item.valor) || 0),
+                        item.status === 'Finalizado' ? item.pagamento : `${item.pagamento} (pendente)`,
+                        item.status, item.entrada, item.saida
+                    ])
+                    : [[{ content: 'Nenhum painel no período selecionado.', colSpan: 8, styles: { halign: 'center' } }]],
+                theme: 'striped',
+                headStyles: { fillColor: [139, 0, 0] },
+                styles: { fontSize: 9 }
+            });
+
+            const sufixo = label.replace(/[^0-9a-zA-Z]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+            doc.save(`relatorio-paineis-${sufixo}.pdf`);
         }
 
         function deletarPainel(id) {
@@ -726,22 +980,32 @@
             const tbody = document.getElementById('lista-paineis');
             tbody.innerHTML = '';
 
-            let total = 0, pix = 0, din = 0, deb = 0, cred = 0;
+            preencherAnosFiltro();
+            const { label, itens } = getPaineisFiltrados();
+            const r = calcularResumo(itens);
 
-            state.paineis.forEach(item => {
+            document.getElementById('f-resumo').innerText = `${label}: ${itens.length} painel(is) encontrado(s).`;
+
+            if (itens.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">Nenhum painel no período selecionado.</td></tr>';
+            }
+
+            itens.forEach(item => {
                 const val = parseFloat(item.valor) || 0;
-                total += val;
-                if (item.pagamento === 'Pix') pix += val;
-                if (item.pagamento === 'Dinheiro') din += val;
-                if (item.pagamento === 'Débito') deb += val;
-                if (item.pagamento === 'Crédito') cred += val;
+                const finalizado = item.status === 'Finalizado';
+                const pagamentoHtml = finalizado
+                    ? `${item.pagamento}<span class="pay-confirmed">✔ Confirmado</span>`
+                    : `<select class="form-control pay-select" onchange="editarPagamento(${item.id}, this.value)">
+                            ${['A definir', ...FORMAS_PAGAMENTO].map(f => `<option value="${f}" ${item.pagamento === f ? 'selected' : ''}>${f}</option>`).join('')}
+                       </select>
+                       <span class="pay-pending">⏳ Confirma ao finalizar</span>`;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${item.modelo}</strong></td>
                     <td>${item.cliente}<br><small style="color:#888">${item.telefone}</small></td>
                     <td>R$ ${val.toFixed(2)}</td>
-                    <td>${item.pagamento}</td>
+                    <td>${pagamentoHtml}</td>
                     <td>
                         <span class="badge ${item.status === 'Finalizado' ? 'badge-success' : 'badge-warning'}">
                             ${item.status === 'Finalizado' ? '🟢 Finalizado' : '🟡 Em Andamento'}
@@ -756,11 +1020,12 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('m-total').innerText = `R$ ${total.toFixed(2)}`;
-            document.getElementById('m-pix').innerText = `R$ ${pix.toFixed(2)}`;
-            document.getElementById('m-dinheiro').innerText = `R$ ${din.toFixed(2)}`;
-            document.getElementById('m-debito').innerText = `R$ ${deb.toFixed(2)}`;
-            document.getElementById('m-credito').innerText = `R$ ${cred.toFixed(2)}`;
+            document.getElementById('m-total').innerText = `R$ ${r.total.toFixed(2)}`;
+            document.getElementById('m-receber').innerText = `R$ ${r.receber.toFixed(2)}`;
+            document.getElementById('m-pix').innerText = `R$ ${r.Pix.toFixed(2)}`;
+            document.getElementById('m-dinheiro').innerText = `R$ ${r.Dinheiro.toFixed(2)}`;
+            document.getElementById('m-debito').innerText = `R$ ${r['Débito'].toFixed(2)}`;
+            document.getElementById('m-credito').innerText = `R$ ${r['Crédito'].toFixed(2)}`;
         }
 
         // MÓDULO GARANTIA DE MOTORES (3 TROCAS)
